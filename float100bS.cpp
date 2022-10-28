@@ -31,7 +31,6 @@ class Mantissa {
         void operator>>(int shampt);
         int operator>(const Mantissa& target);
         int operator<(const Mantissa& target);
-        int operator==(const Mantissa& target);
 
 };
 
@@ -51,27 +50,24 @@ class _float100b  {
         void operator<<(int shampt);
         void operator>>(int shampt);
         int operator>(const _float100b& target);
-        int operator<(const _float100b& target);
-        int operator==(const _float100b& target);
         
 };
 /////////// main
 
 int main(void) {
-    _int100b result("7FFFFFF7eCFFFFFFFFFFFFFFF");
+    _int100b result("FFFFFFFFFFFFFFFFFFFFFFFFF");
     Mantissa a;
     Mantissa b;
-    _float100b firstFloat("7FFFFFF7eCFFFFFFFFFFFFFFF");
-    _float100b secondFloat("7FFFFFF7eCFFFFFFFFFFFFFFF");
+    /*
+    a.mantissaF = 0x3;
+    a.mantissaB = 1;
+    b.mantissaF = 0x4;
+    b.mantissaB = 0;
+    */
+    _float100b firstFloat("FFFFFFFFFFFFFFFFFFFFFFFFF");
     firstFloat.print_float();
-    cout<<"test"<<endl;
-    if(firstFloat > secondFloat) {
-        cout << "success!" << endl;
-    }
-    if(firstFloat == secondFloat) {
-        cout << "same" << endl;
-    }
     if(a>b) {cout<< "a is bigger"<<endl;}
+
 
     printf("%09llx%016llx\n", result.get_int64bF(), result.get_int64bB());
 }
@@ -82,11 +78,13 @@ _int100b::_int100b(const char* char100b) : int64bF(0), int64bB(0) {
     string_to_num(char100b);
 }
 void _int100b::string_to_num(string char100b) {
-    int pivot = 9;
-    uint64_t *tmpNum = &int64bF;
+    int pivot = 16; // 4bits * 16 = 64bits
+    int count=0;
+    uint64_t *tmpNum = &int64bB;
+    cout<<*tmpNum<<endl;
     for(int i=0; i<char100b.length(); i++) { //length will be 25(4bits * 25)
         if(i==pivot) {
-            tmpNum = &int64bB;
+            tmpNum = &int64bF;
         }
         if( char100b[i] >= 'A' && char100b[i] <= 'F' )  {              
             *tmpNum = *tmpNum * 16 + char100b[i] - 'A' + 10;
@@ -108,7 +106,8 @@ Mantissa::Mantissa() {mantissaF = 0x40; mantissaB = 0;}
 uint64_t Mantissa::get_mantissaF(){return mantissaF;}
 uint64_t Mantissa::get_mantissaB(){return mantissaB;}
 void Mantissa::set_mantissa(uint64_t mantissaF, uint64_t mantissaB) {
-    this->mantissaF += mantissaF;
+    this->mantissaF = mantissaF;
+    mantissaF = mantissaF | 0x40;
     this->mantissaB = mantissaB;
 }
 void Mantissa::operator<<(int shampt) {
@@ -139,23 +138,15 @@ int Mantissa::operator<(const Mantissa& target) {
         return 0;
     }
 }
-int Mantissa::operator==(const Mantissa& target) {
-    if((mantissaF == target.mantissaF) && (mantissaB == target.mantissaB)) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
 
 
 //_float100b part
 _float100b::_float100b() {}
 _float100b::_float100b(const char* char100b) {
     _int100b int100b(char100b);
-    signBit = int100b.get_int64bF() & 0x800000000;
-    exponent = (int100b.get_int64bF() & 0x7ffffffc0) >> 6;
-    mantissa.set_mantissa(int100b.get_int64bF()&0x000000000000003f, int100b.get_int64bB()&0xffffffffffffffff);
+    signBit = int100b.get_int64bF() & 0x800000000; // 64bF의 뒤에서부터 36번쨰
+    exponent = (int100b.get_int64bF() & 0x7ffffffc0) >> 6; // 2번째 비트부터 29개 비트연산 후 앞으로 땡김
+    mantissa.set_mantissa(int100b.get_int64bF()&0x000000087f, int100b.get_int64bB()&0xffffffffffffffff); // 
 }
 bool _float100b::get_sign_bit(){return signBit;}
 int _float100b::get_exponent(){return exponent;}
@@ -164,45 +155,5 @@ void _float100b::print_float() {
     cout << hex;
     cout << "signBit: " << signBit << endl;
     cout << "exponent: " << exponent << endl;
-    cout << "mantissaF: " << (mantissa.get_mantissaF() & 0x3f) << endl;
-    cout << "mantissaB: " << mantissa.get_mantissaB() << endl;
-    cout << "hiddenBit: " << ((mantissa.get_mantissaF() & 0x40)>>6) << endl;
-}
-void _float100b::operator<<(int shampt) {
-    exponent+=shampt;
-    mantissa<<shampt;
-}
-void _float100b::operator>>(int shampt) {
-    exponent-=shampt;
-    mantissa>>shampt;
-}
-int _float100b::operator>(const _float100b& target) {
-    if (exponent > target.exponent) {
-        return 1;
-    }
-    else if((exponent==target.exponent) && mantissa>target.mantissa) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-int _float100b::operator<(const _float100b& target) {
-    if (exponent < target.exponent) {
-        return 1;
-    }
-    else if((exponent==target.exponent) && mantissa<target.mantissa) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-int _float100b::operator==(const _float100b& target) {
-    if((exponent == target.exponent) && (mantissa == target.mantissa)) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
+    cout << "mantissa: " << (mantissa.get_mantissaF() & 0x3f) << mantissa.get_mantissaB() << endl;
 }
