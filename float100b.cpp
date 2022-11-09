@@ -67,7 +67,7 @@ class _float100b  {
         _float100b operator+(const _float100b& target);
         
 };
-/////////// main
+///////// main
 
 int main(void) {
     static char float100b_1[26], float100b_2[26];
